@@ -42,7 +42,8 @@
         android:layout_height="wrap_content"
         android:id="@+id/ratingBar"
         android:layout_gravity="center_horizontal"
-        android:stepSize="1.0" />
+        android:stepSize="1.0"
+        android:theme="@style/RatingBar"/>
 
     <Button
         android:layout_width="150dp"
