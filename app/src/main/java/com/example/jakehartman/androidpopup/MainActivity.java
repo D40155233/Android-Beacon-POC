@@ -21,15 +21,22 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.altbeacon.beacon.AltBeacon;
+import org.altbeacon.beacon.Identifier;
+import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
-import org.altbeacon.beacon.Identifier;
-import org.altbeacon.beacon.MonitorNotifier;
+import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
+import org.altbeacon.beacon.MonitorNotifier;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
+import java.lang.Object;
+import android.os.*;
+
+import java.util.Collection;
 
 public class MainActivity extends Activity implements BeaconConsumer {
 
@@ -37,6 +44,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
     private Button showWelcomePopup;
     private Button showFeedbackPopup;
     private BeaconManager beaconManager;
+    //private Dialog feedback = new Dialog(context);
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     @TargetApi(23)
     public void onCreate(Bundle savedInstanceState) {
@@ -44,14 +52,37 @@ public class MainActivity extends Activity implements BeaconConsumer {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         beaconManager = BeaconManager.getInstanceForApplication(context);
-        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:0-3=4c000215,i:4-19,i:20-21,i:22-23,p:24-24"));
+        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
         beaconManager.bind(this);
-
         showWelcomePopup = (Button) findViewById(R.id.buttonShowWelcomeDialog);
         showFeedbackPopup = (Button) findViewById(R.id.buttonShowFeedbackDialog);
 
+        //feedback.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        //feedback.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+
         String urlString = "http://mbldevapp1.dev.devry.edu:8080/DVG-CustomerEngagement-Services/api/customerengagement/";
-        new ProcessJSON().execute(urlString);
+//        String callType  = "GET";
+        JSONObject authHeaders = new JSONObject();
+        try {
+            authHeaders.put("authorization", "PYJIKS17nR1rjB+RroyU/KzgUmoz9x84r9YehdpLhJw=");
+            authHeaders.put("dsi", "D40234627");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        JSONObject body = new JSONObject();
+        try {
+            body.put("caller_id", "D01317819");
+            body.put("contact_type", "Self-service");
+            body.put("short_description", "Short Test");
+            body.put("description", "Long Test");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        new ProcessJSON().execute("http://mbldevapp1.dev.devry.edu:8080/DVG-CustomerEngagement-Services/api/customerengagement/", "GET", authHeaders, null);
+        new ProcessJSON().execute("http://mbldevapp1.dev.devry.edu:8080/DeVry-Mobile-Services/api/servicenow?sysparm_display_value=true", "POST", authHeaders, body);
+
+
 
         // add button listener
         showWelcomePopup.setOnClickListener(new OnClickListener() {
@@ -130,6 +161,8 @@ public class MainActivity extends Activity implements BeaconConsumer {
         }
     }
 
+    //Permissions used to perform functionality in the app.
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
@@ -156,6 +189,12 @@ public class MainActivity extends Activity implements BeaconConsumer {
         }
     }
 
+
+
+
+
+
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -164,21 +203,30 @@ public class MainActivity extends Activity implements BeaconConsumer {
 
     @Override
     public void onBeaconServiceConnect() {
+        final TextView tv = (TextView) findViewById(R.id.textView4);
+        final TextView tv2 = (TextView) findViewById(R.id.textView5);
         beaconManager.addMonitorNotifier(new MonitorNotifier() {
             @Override
             public void didEnterRegion(Region region) {
-                Log.i("detected", "I just saw an beacon for the first time!");
-                final Dialog dialog = new Dialog(MainActivity.this);
-                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.setContentView(R.layout.test_popup);
-                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-                dialog.show();
-                Log.i("showing", "Showing dialog!");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv2.setText("Entered Monitoring Region!");
+                        //feedback.setContentView(R.layout.feedback_popup);
+                    }
+                });
+                tv2.setText("Entered Monitoring Region!");
             }
 
             @Override
             public void didExitRegion(Region region) {
                 Log.i("not in range", "I no longer see an beacon");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv2.setText("Exited Monitoring Region!");
+                    }
+                });
             }
 
             @Override
@@ -187,27 +235,63 @@ public class MainActivity extends Activity implements BeaconConsumer {
             }
         });
 
+
+            beaconManager.addRangeNotifier(new RangeNotifier() {
+                boolean triggered = false;
+
+                @Override
+                public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+                    if (beacons.size() > 0) {
+                        final Beacon firstBeacon = beacons.iterator().next();
+                        Log.d("BEACON", firstBeacon.getRssi() + "The first beacon " + firstBeacon.toString() + " is about " + firstBeacon.getDistance() + " meters away.");
+                        Log.d("BEACON", "INFO: " + "Power:" + firstBeacon.getTxPower() + "" + firstBeacon.getBeaconTypeCode());
+                        Log.d("BEACON", "YO");
+                        //tv.setText("Your distance is " + firstBeacon.getDistance());
+                        if (firstBeacon.getDistance() < 5) {
+                            if (triggered == false) {
+                                this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        triggered = true;
+                                        final Dialog dialog = new Dialog(context);
+                                        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                                        dialog.setContentView(R.layout.feedback_popup);
+                                        dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+
         try {
-            beaconManager.startMonitoringBeaconsInRegion(new Region("DeVry Meraki", Identifier.parse("6fbbef7c-f92c-471e-8d5c-470e9b367fdb"), Identifier.parse("0"), Identifier.parse("0")));
-        } catch (RemoteException e) {    }
+            beaconManager.startRangingBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("6fbbef7c-f92c-471e-8d5c-470e9b367fdb"), Identifier.parse("0"), Identifier.parse("0")));
+            beaconManager.startMonitoringBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("6fbbef7c-f92c-471e-8d5c-470e9b367fdb"), Identifier.parse("0"), Identifier.parse("0")));
+            //beaconManager.startRangingBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("1b09c0cb-63cf-4b31-af1e-646277bd8b49"), Identifier.parse("25"), Identifier.parse("5")));
+            //beaconManager.startMonitoringBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("1b09c0cb-63cf-4b31-af1e-646277bd8b49"), Identifier.parse("25"), Identifier.parse("5")));
+            //beaconManager.updateScanPeriods();
+        } catch (RemoteException e) {   }
     }
 
-    private class ProcessJSON extends AsyncTask<String, Void, String>{
-        protected String doInBackground(String... strings){
+    private class ProcessJSON extends AsyncTask<Object, Void, String>{
+        protected String doInBackground(Object... params){
             String stream = null;
-            String urlString = strings[0];
+            String urlString = (String) params[0];
+            String callType  = (String) params[1];
+            Log.i("STREAM", callType);
+            JSONObject headers  = (JSONObject) params[2];
+            JSONObject body  = (JSONObject) params[3];
 
             HTTPDataHandler hh = new HTTPDataHandler();
-            stream = hh.GetHTTPData(urlString);
-
-            Log.i("JSON", "stream");
+            stream = hh.GetHTTPData(urlString, callType, headers, body);
 
             // Return the data from specified url
             return stream;
         }
 
         protected void onPostExecute(String stream){
-            Log.i("Stream", "stream");
             //TextView tv = (TextView) findViewById(R.id.tv);
             //tv.setText(stream);
 
@@ -280,4 +364,6 @@ public class MainActivity extends Activity implements BeaconConsumer {
             } // if statement end
         } // onPostExecute() end
     } // ProcessJSON class end
+
+
 }
