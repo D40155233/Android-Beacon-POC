@@ -41,9 +41,11 @@ import java.util.Collection;
 public class MainActivity extends Activity implements BeaconConsumer {
 
     private Context context = this;
+    //private Activity activity;
     private Button showWelcomePopup;
     private Button showFeedbackPopup;
     private BeaconManager beaconManager;
+    private Handler mHandler =new Handler();
     //private Dialog feedback = new Dialog(context);
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     @TargetApi(23)
@@ -54,6 +56,7 @@ public class MainActivity extends Activity implements BeaconConsumer {
         beaconManager = BeaconManager.getInstanceForApplication(context);
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
         beaconManager.bind(this);
+
         showWelcomePopup = (Button) findViewById(R.id.buttonShowWelcomeDialog);
         showFeedbackPopup = (Button) findViewById(R.id.buttonShowFeedbackDialog);
 
@@ -96,11 +99,6 @@ public class MainActivity extends Activity implements BeaconConsumer {
                 dialog.setContentView(R.layout.welcome_popup);
                 dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
 
-                // set the custom dialog components - text, image and button
-//                TextView text = (TextView) dialog.findViewById(R.id.text);
-//                text.setText("Android custom dialog example!");
-//                ImageView image = (ImageView) dialog.findViewById(R.id.image);
-//                image.setImageResource(R.drawable.ic_launcher);
 
                 Button dialogButton = (Button) dialog.findViewById(R.id.dialogButtonOK);
                 // if button is clicked, close the custom dialog
@@ -189,12 +187,6 @@ public class MainActivity extends Activity implements BeaconConsumer {
         }
     }
 
-
-
-
-
-
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -211,22 +203,20 @@ public class MainActivity extends Activity implements BeaconConsumer {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        tv2.setText("Entered Monitoring Region!");
-                        //feedback.setContentView(R.layout.feedback_popup);
+                        tv2.setText("Entered Monitored Region");
+                        final Dialog dialog = new Dialog(context);
+                        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                        dialog.setContentView(R.layout.feedback_popup);
+                        dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+
                     }
                 });
-                tv2.setText("Entered Monitoring Region!");
+
             }
 
             @Override
             public void didExitRegion(Region region) {
                 Log.i("not in range", "I no longer see an beacon");
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        tv2.setText("Exited Monitoring Region!");
-                    }
-                });
             }
 
             @Override
@@ -246,22 +236,17 @@ public class MainActivity extends Activity implements BeaconConsumer {
                         Log.d("BEACON", firstBeacon.getRssi() + "The first beacon " + firstBeacon.toString() + " is about " + firstBeacon.getDistance() + " meters away.");
                         Log.d("BEACON", "INFO: " + "Power:" + firstBeacon.getTxPower() + "" + firstBeacon.getBeaconTypeCode());
                         Log.d("BEACON", "YO");
-                        //tv.setText("Your distance is " + firstBeacon.getDistance());
-                        if (firstBeacon.getDistance() < 5) {
-                            if (triggered == false) {
-                                this.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        triggered = true;
-                                        final Dialog dialog = new Dialog(context);
-                                        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                                        dialog.setContentView(R.layout.feedback_popup);
-                                        dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                tv.setText("Your distance is " + firstBeacon.getDistance());
+                                final Dialog dialog = new Dialog(context);
+                                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                                dialog.setContentView(R.layout.feedback_popup);
+                                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
 
-                                    }
-                                });
                             }
-                        }
+                        });
                     }
                 }
             });
