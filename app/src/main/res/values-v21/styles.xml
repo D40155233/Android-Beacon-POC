@@ -8,7 +8,7 @@
     </style>
 
     <style name="RatingBar" parent="Theme.AppCompat">
-        <item name="colorControlNormal">@color/devryGold</item>
-        <item name="colorControlActivated">@color/lightGrey</item>
+        <item name="colorControlNormal">@color/lightGrey</item>
+        <item name="colorControlActivated">@color/devryGold</item>
     </style>
 </resources>

@@ -1,5 +1,6 @@
 package com.example.jakehartman.androidpopup;
 
+import android.app.Application;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 
@@ -50,29 +51,24 @@ import org.json.JSONTokener;
 
 import java.util.Collection;
 
-public class MainActivity extends Activity implements BeaconConsumer {
+public class MainActivity extends Activity {
 
     public static final String PREFS_NAME = "DVGBeacon";
+    public boolean showFeedbackOnResume = false;
+    private static final String TAG = "BeaconReferenceAppF";
 
     private Context context = this;
-    private Button showWelcomePopup;
-    private Button showFeedbackPopup;
+    private BeaconReferenceApplication app;
     private BeaconManager beaconManager;
-    private Boolean welcomeTriggered;
+    private Dialog dialog;
+    private SharedPreferences settings;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     @TargetApi(23)
     public void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-        welcomeTriggered = settings.getBoolean("welcomeTriggered", false);
         setContentView(R.layout.activity_main);
-        beaconManager = BeaconManager.getInstanceForApplication(context);
-        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
-        beaconManager.bind(this);
-
-        showWelcomePopup = (Button) findViewById(R.id.buttonShowWelcomeDialog);
-        showFeedbackPopup = (Button) findViewById(R.id.buttonShowFeedbackDialog);
+        app = (BeaconReferenceApplication)getApplication();
 
         JSONObject authHeaders = new JSONObject();
         try {
@@ -107,64 +103,6 @@ public class MainActivity extends Activity implements BeaconConsumer {
         //JSONArray attendees = (JSONArray) ProcessJSON("http://mblpocapp1.poc.devry.edu:9000/attendees", "GET", authHeaders, null);
         //new ProcessJSONAsync().execute("http://mblpocapp1.poc.devry.edu:9000/attendee", "POST", authHeaders, attendeeBody);
 
-
-
-        // add button listener
-        showWelcomePopup.setOnClickListener(new OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-
-                // custom dialog
-                final Dialog dialog = new Dialog(context);
-                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.setContentView(R.layout.welcome_popup);
-                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-
-
-                Button dialogButton = (Button) dialog.findViewById(R.id.dialogButtonOK);
-                // if button is clicked, close the custom dialog
-                dialogButton.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        dialog.dismiss();
-                    }
-                });
-
-                dialog.show();
-            }
-        });
-
-        showFeedbackPopup.setOnClickListener(new OnClickListener() {
-
-            @Override
-            public void onClick(View arg0) {
-
-                // custom dialog
-                final Dialog dialog = new Dialog(context);
-                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.setContentView(R.layout.feedback_popup);
-                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-
-                // set the custom dialog components - text, image and button
-//                TextView text = (TextView) dialog.findViewById(R.id.text);
-//                text.setText("Android custom dialog example!");
-//                ImageView image = (ImageView) dialog.findViewById(R.id.image);
-//                image.setImageResource(R.drawable.ic_launcher);
-
-                Button dialogButton = (Button) dialog.findViewById(R.id.dialogButtonOK);
-                // if button is clicked, close the custom dialog
-                dialogButton.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        dialog.dismiss();
-                    }
-                });
-
-                dialog.show();
-            }
-        });
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 final AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -184,85 +122,8 @@ public class MainActivity extends Activity implements BeaconConsumer {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        beaconManager.unbind(this);
     }
 
-    /*///////////////////////////////////////////////
-        Beacon Service Callbacks
-    *////////////////////////////////////////////////
-    @Override
-    public void onBeaconServiceConnect() {
-        final TextView tv = (TextView) findViewById(R.id.textView4);
-        final TextView tv2 = (TextView) findViewById(R.id.textView5);
-        beaconManager.addMonitorNotifier(new MonitorNotifier() {
-            @Override
-            public void didEnterRegion(Region region) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        tv2.setText("Entered Monitored Region");
-                        final Dialog dialog = new Dialog(context);
-                        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                        dialog.setContentView(R.layout.feedback_popup);
-                        dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-                        dialog.show();
-                    }
-                });
-
-            }
-
-            @Override
-            public void didExitRegion(Region region) {
-                Log.i("not in range", "I no longer see an beacon");
-            }
-
-            @Override
-            public void didDetermineStateForRegion(int state, Region region) {
-                Log.i("switched", "I have just switched from seeing/not seeing beacons: " + state);
-            }
-        });
-
-
-            beaconManager.addRangeNotifier(new RangeNotifier() {
-
-                @Override
-                public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
-                    if (beacons.size() > 0) {
-                        final Beacon firstBeacon = beacons.iterator().next();
-                        Log.d("BEACON", firstBeacon.getRssi() + "The first beacon " + firstBeacon.toString() + " is about " + firstBeacon.getDistance() + " meters away.");
-                        Log.d("BEACON", "INFO: " + "Power:" + firstBeacon.getTxPower() + "" + firstBeacon.getBeaconTypeCode());
-                        Log.d("BEACON", "YO");
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                tv.setText("Your distance is " + firstBeacon.getDistance());
-                                if (firstBeacon.getDistance() < 5 && welcomeTriggered == false) {
-                                    welcomeTriggered = true;
-                                    SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-                                    SharedPreferences.Editor editor = settings.edit();
-                                    editor.putBoolean("welcomeTriggered", true );
-                                    editor.commit();
-                                    sendNotification("DVG wants to welcome you!");
-                                    final Dialog dialog = new Dialog(context);
-                                    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                                    dialog.setContentView(R.layout.feedback_popup);
-                                    dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-                                    dialog.show();
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-
-        try {
-            //beaconManager.startRangingBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("6FBBEF7C-F92C-471E-8D5C-470E9B367FDB"), Identifier.parse("0"), Identifier.parse("0")));
-            //beaconManager.startMonitoringBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("6FBBEF7C-F92C-471E-8D5C-470E9B367FDB"), Identifier.parse("0"), Identifier.parse("0")));
-            beaconManager.startRangingBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("48caffe0-c786-4ab9-85f3-6585ace3baee"), Identifier.parse("0"), Identifier.parse("0")));
-            beaconManager.startMonitoringBeaconsInRegion(new Region("myRangingUniqueId", Identifier.parse("48caffe0-c786-4ab9-85f3-6585ace3baee"), Identifier.parse("0"), Identifier.parse("0")));
-            //beaconManager.updateScanPeriods();
-        } catch (RemoteException e) {   }
-    }
 
     /*///////////////////////////////////////////////
         Send Notifications to Phone
@@ -445,6 +306,69 @@ public class MainActivity extends Activity implements BeaconConsumer {
                 return;
             }
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        ((BeaconReferenceApplication) this.getApplicationContext()).setRangingActivity(this);
+        if(app.isShowFeedbackOnResume() == true){
+            displayFeedbackPopup();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        ((BeaconReferenceApplication) this.getApplicationContext()).setRangingActivity(null);
+    }
+
+    public void displayWelcomePopup() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialog = new Dialog(context);
+                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                dialog.setCancelable(false);
+                dialog.setCanceledOnTouchOutside(false);
+                dialog.setContentView(R.layout.welcome_popup);
+                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+                dialog.show();
+
+                Button dialogButtonOK = (Button) dialog.findViewById(R.id.dialogButtonOK);
+
+                dialogButtonOK.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dialog.dismiss();
+                    }
+                });
+            }
+        });
+    }
+
+    public void displayFeedbackPopup() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialog = new Dialog(context);
+                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                dialog.setCancelable(false);
+                dialog.setCanceledOnTouchOutside(false);
+                dialog.setContentView(R.layout.feedback_popup);
+                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+                dialog.show();
+
+                Button dialogButtonOK = (Button) dialog.findViewById(R.id.dialogButtonOK);
+
+                dialogButtonOK.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick (View v){
+                        dialog.dismiss();
+                    }
+                });
+            }
+        });
     }
 
 

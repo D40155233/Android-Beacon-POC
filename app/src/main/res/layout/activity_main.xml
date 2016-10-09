@@ -4,52 +4,8 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="horizontal"
+    android:background="@drawable/bitmap_background"
     android:gravity="bottom">
-
-    <Button
-        android:id="@+id/buttonShowWelcomeDialog"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Welcome"
-        android:layout_alignTop="@+id/buttonShowFeedbackDialog"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
-
-    <Button
-        android:id="@+id/buttonShowFeedbackDialog"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Feedback"
-        android:layout_gravity="bottom"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@+id/buttonShowWelcomeDialog"
-        android:layout_toEndOf="@+id/buttonShowWelcomeDialog" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Not in Range"
-        android:id="@+id/textView5"
-        android:layout_gravity="center_vertical"
-        android:layout_marginTop="125dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignLeft="@+id/textView4"
-        android:layout_alignStart="@+id/textView4"
-        android:layout_alignRight="@+id/textView4"
-        android:layout_alignEnd="@+id/textView4" />
-
-    <TextView
-        android:layout_width="161dp"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Not Found"
-        android:id="@+id/textView4"
-        android:layout_gravity="bottom"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@+id/buttonShowFeedbackDialog"
-        android:layout_toEndOf="@+id/buttonShowFeedbackDialog"
-        android:layout_marginBottom="185dp" />
 
 
 </RelativeLayout>
