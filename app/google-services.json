@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "223614645229",
+    "firebase_url": "https://ios-beacons.firebaseio.com",
+    "project_id": "ios-beacons",
+    "storage_bucket": "ios-beacons.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:223614645229:android:76916388c68a607f",
+        "android_client_info": {
+          "package_name": "com.example.jakehartman.androidpopup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "223614645229-491k9kuph7dbjeo4r4skjt42t575rhdt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB96BDCIPgMrBLrdJ2pF-c-YfKuyG-KoD4"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

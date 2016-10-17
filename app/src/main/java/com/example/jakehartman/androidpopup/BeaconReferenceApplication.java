@@ -7,10 +7,13 @@ import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.RemoteException;
+import android.provider.Settings.Secure;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.app.Activity;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -22,16 +25,31 @@ import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.powersave.BackgroundPowerSaver;
 import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.Collection;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class BeaconReferenceApplication extends Application implements BootstrapNotifier, BeaconConsumer, RangeNotifier {
     private static final String TAG = "BeaconReferenceApp";
     private RegionBootstrap regionBootstrap;
     private BackgroundPowerSaver backgroundPowerSaver;
+    public static Context context;
     private MainActivity rangingActivity = null;
     private boolean showFeedbackOnResume = false;
-    public static final String PREFS_NAME = "DVGBeacon";
+    private boolean showWelcomeOnResume = false;
+    private boolean attendeeDataSent = false;
+    private String android_id;
+    private static final String PREFS_NAME = "DVGBeacon";
     private boolean haveDetectedBeaconsSinceBoot = false;
     private boolean welcomePopupShown = false;
 
@@ -40,6 +58,8 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
 
     public void onCreate() {
         super.onCreate();
+        context = getApplicationContext();
+        android_id = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         beaconManager = BeaconManager.getInstanceForApplication(this);
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
@@ -51,7 +71,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
 
         beaconManager.setBackgroundBetweenScanPeriod(1100l);
         //beaconManager.setForegroundBetweenScanPeriod(2000l);
-        beaconManager.bind(this);
+        //beaconManager.bind(this);
     }
 
     @Override
@@ -67,6 +87,11 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         }
         else if(welcomePopupShown && rangingActivity == null) {
             showFeedbackOnResume = true;
+            try {
+                beaconManager.stopMonitoringBeaconsInRegion(region);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
             Log.d(TAG, "Sending notification.");
             sendNotification("Please provide feedback for DeVry Education Group's IT Update Meeting!");
         }
@@ -102,7 +127,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
             Beacon beacon = beacons.iterator().next();
             Log.d(TAG, "Beacon found!!!");
             Log.d(TAG, "Beacon is" + beacon.getDistance() + " meters away");
-            if (!haveDetectedBeaconsSinceBoot && beacon.getDistance()<1) {
+            if (!haveDetectedBeaconsSinceBoot && beacon.getDistance()<5) {
                 Log.d(TAG, "auto launching MainActivity");
 
                 // The very first time since boot that we detect an beacon, we launch the
@@ -120,33 +145,24 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
                     // seen on its display
                     if(welcomePopupShown == false) {
                         Log.d(TAG, "Showing popup!");
-                        rangingActivity.displayWelcomePopup();
+                        if(showWelcomeOnResume != true) {
+                            rangingActivity.displayWelcomePopup();
+                        }
+                        showWelcomeOnResume = true;
                         welcomePopupShown = true;
                     }
                 } else if (rangingActivity == null && beacon.getDistance()<5){
                     // If we have already seen beacons before, but the monitoring activity is not in
                     // the foreground, we send a notification to the user on subsequent detections.
                     if(welcomePopupShown == false) {
+                        attendeeDataSent = true;
                         Log.d(TAG, "Sending notification.");
                         sendNotification("DeVry Education Group would like to welcome you!");
                     }
                 }
-                //This is the implementation of showing the feedbackPopup, based upon the assumption that
-                //we will display it once the user has seen the welcome popup and moved x meters away from it
-                //Delete if logic changes
-                if (rangingActivity != null && beacon.getDistance()>10 && welcomePopupShown == true) {
-                    Log.d(TAG, "Showing Feedback popup!");
-                    rangingActivity.displayFeedbackPopup();
-                    try {
-                        beaconManager.stopRangingBeaconsInRegion(region);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                } else if (rangingActivity == null && beacon.getDistance()>10 && welcomePopupShown == true){
-                    // If we have already seen beacons before, but the monitoring activity is not in
-                    // the foreground, we send a notification to the user on subsequent detections.
-                    Log.d(TAG, "Sending notification.");
-                    sendNotification("Please provide feedback for DeVry Education Group's IT Update Meeting!");
+                if(attendeeDataSent == false) {
+                    sendAttendeeData(beacon.getId1().toUuid().toString());
+                    attendeeDataSent = true;
                 }
             }
         }
@@ -166,7 +182,8 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
                 new NotificationCompat.Builder(this)
                         .setContentTitle("DeVry Education Group")
                         .setContentText(text)
-                        .setSmallIcon(R.drawable.ic_launcher);
+                        .setSmallIcon(R.drawable.ic_dvg)
+                        .setColor(getResources().getColor(R.color.devryGold));
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addNextIntent(new Intent(this, MainActivity.class));
@@ -182,6 +199,125 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     }
 
     public boolean isShowFeedbackOnResume() {
+        Log.d(TAG, "isShowingFeedbackonResume status: " + showFeedbackOnResume);
         return showFeedbackOnResume;
+    }
+
+    public void setShowFeedbackOnResume(boolean bool) {
+        showFeedbackOnResume = bool;
+    }
+
+    public boolean isShowWelcomeOnResume() {
+        Log.d(TAG, "isShowingWelcomeOnResume status: " + showWelcomeOnResume);
+        return showWelcomeOnResume;
+    }
+
+    public void setShowWelcomeOnResume(boolean bool) {
+        showWelcomeOnResume = bool;
+    }
+
+    /*///////////////////////////////////////////////
+        Process Get/Post request asynchronously
+    *////////////////////////////////////////////////
+    private class ProcessJSONAsync extends AsyncTask<Object, Void, Object> {
+        protected Object doInBackground(Object... params){
+            final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+            Response response = null;
+            Object finalResp = null;
+
+            String urlString = (String) params[0];
+            String callType  = (String) params[1];
+            JSONObject headers  = (JSONObject) params[2];
+            JSONObject body  = (JSONObject) params[3];
+
+            if(callType == "GET") {
+                OkHttpClient client = new OkHttpClient();
+                Request request = new Request.Builder()
+                        .url(urlString)
+                        .addHeader("authorization", "PYJIKS17nR1rjB+RroyU/KzgUmoz9x84r9YehdpLhJw=")
+                        .addHeader("dsi", "D40234627")
+                        .build();
+
+                client.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onResponse(Call call, final Response response) throws IOException {
+                        Response resp = response;
+                        String responseData = resp.body().string();
+                        try {
+                            JSONObject json = new JSONObject(responseData);
+                            Log.d("STREAM", json.toString());
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        //finalResp = resp.body().string();
+                    }
+
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        e.printStackTrace();
+                        Log.d(TAG, "THERE WAS AN ERROR ON THE CALL! " + e);
+                    }
+                });
+            }
+
+            if(callType == "POST") {
+                OkHttpClient client = new OkHttpClient();
+                RequestBody rb = RequestBody.create(JSON, body.toString());
+                Request request = new Request.Builder()
+                        .url(urlString)
+                        .addHeader("authorization", "PYJIKS17nR1rjB+RroyU/KzgUmoz9x84r9YehdpLhJw=")
+                        .addHeader("dsi", "D40234627")
+                        .post(rb)
+                        .build();
+                client.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onResponse(Call call, final Response response) throws IOException {
+                        try {
+                            Response resp = response;
+                            String responseData = resp.body().string();
+                            Log.d("STREAM", "YO" + resp.header("Content-Type"));
+                            JSONObject json = new JSONObject(responseData);
+                            Log.d("STREAM", json.toString());
+                        } catch (JSONException e) {
+                            Log.d("STREAM", "EXCEPTION");
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+            return finalResp;
+        }
+    }
+
+    private void sendAttendeeData(String UUID) {
+        JSONObject authHeaders = new JSONObject();
+        String timeStamp = new java.util.Date().toString();
+        try {
+            authHeaders.put("authorization", "PYJIKS17nR1rjB+RroyU/KzgUmoz9x84r9YehdpLhJw=");
+            authHeaders.put("dsi", "D40234627");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        JSONObject attendeeBody = new JSONObject();
+        try {
+            attendeeBody.put("deviceID", android_id);
+            attendeeBody.put("beaconID", UUID);
+            attendeeBody.put("os", "Android");
+            attendeeBody.put("timestamp", timeStamp);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        Log.d(TAG, android_id);
+        new ProcessJSONAsync().execute("http://mblpocapp1.poc.devry.edu:9000/attendee", "POST", authHeaders, attendeeBody);
+        new ProcessJSONAsync().execute("http://mblpocapp1.poc.devry.edu:9000/attendees", "GET", authHeaders, null);
+    }
+
+    public void bindBeacon() {
+        beaconManager.bind(this);
     }
 }

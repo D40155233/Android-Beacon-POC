@@ -45,6 +45,14 @@
         android:stepSize="1.0"
         android:theme="@style/RatingBar"/>
 
+    <EditText
+        android:layout_width="350dp"
+        android:layout_height="wrap_content"
+        android:inputType="textMultiLine"
+        android:ems="10"
+        android:id="@+id/editText"
+        android:layout_gravity="center_horizontal" />
+
     <Button
         android:layout_width="150dp"
         android:layout_height="wrap_content"

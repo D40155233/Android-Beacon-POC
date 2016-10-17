@@ -2,6 +2,7 @@ package com.example.jakehartman.androidpopup;
 
 import android.app.Application;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.AsyncTask;
 
 import android.Manifest;
@@ -15,12 +16,15 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.altbeacon.beacon.AltBeacon;
@@ -43,6 +47,8 @@ import android.support.v4.app.NotificationCompat;
 import android.app.PendingIntent;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.widget.Toast;
+
 import okhttp3.*;
 import java.io.IOException;
 import okhttp3.MediaType;
@@ -61,14 +67,26 @@ public class MainActivity extends Activity {
     private BeaconReferenceApplication app;
     private BeaconManager beaconManager;
     private Dialog dialog;
-    private SharedPreferences settings;
+    private SharedPreferences sharedPreferences;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     @TargetApi(23)
     public void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         app = (BeaconReferenceApplication)getApplication();
+        Button debugButton = (Button) findViewById(R.id.debugButton);
+        debugButton.setVisibility(View.VISIBLE);
+
+        debugButton.setOnLongClickListener(new View.OnLongClickListener() {
+
+            @Override
+            public boolean onLongClick(View v) {
+                Toast.makeText(MainActivity.this, "Values Reset", Toast.LENGTH_LONG).show();
+                return true;
+            }
+        });
+
+        displayLoginPopup();
 
         JSONObject authHeaders = new JSONObject();
         try {
@@ -132,8 +150,14 @@ public class MainActivity extends Activity {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setContentTitle("DeVry Education Group Beacon")
-                        .setContentText(text)
-                        .setSmallIcon(R.drawable.ic_launcher);
+                        .setContentText(text);
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder.setSmallIcon(R.drawable.ic_sms_failed_transparent_24dp);
+            builder.setColor(getResources().getColor(R.color.devryGold));
+        } else {
+            builder.setSmallIcon(R.drawable.ic_sms_failed_black_24dp);
+        }
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addNextIntent(new Intent(this, MainActivity.class));
@@ -149,70 +173,9 @@ public class MainActivity extends Activity {
     }
 
     /*///////////////////////////////////////////////
-        Process Get/Post request synchronized
-    *////////////////////////////////////////////////
-    private Object ProcessJSON(Object... params) {
-        final MediaType JSON
-                = MediaType.parse("application/json; charset=utf-8");
-
-        String urlString = (String) params[0];
-        String callType  = (String) params[1];
-        JSONObject headers  = (JSONObject) params[2];
-        JSONObject body  = (JSONObject) params[3];
-
-        if(callType == "GET") {
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                    .url(urlString)
-                    .addHeader("authorization", "PYJIKS17nR1rjB+RroyU/KzgUmoz9x84r9YehdpLhJw=")
-                    .addHeader("dsi", "D40234627")
-                    .build();
-            Response response = null;
-            try {
-                Log.i("Stream", "Trying get...");
-                response = client.newCall(request).execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                Log.i("STREAM", response.body().string());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if(callType == "POST") {
-            OkHttpClient client = new OkHttpClient();
-            RequestBody rb = RequestBody.create(JSON, body.toString());
-            Request request = new Request.Builder()
-                    .url(urlString)
-                    .addHeader("authorization", "PYJIKS17nR1rjB+RroyU/KzgUmoz9x84r9YehdpLhJw=")
-                    .addHeader("dsi", "D40234627")
-                    .post(rb)
-                    .build();
-
-            Response response = null;
-            try {
-                Log.i("Stream", "Trying post...");
-                response = client.newCall(request).execute();
-            } catch (IOException e) {
-                Log.i("Stream", "EXCEPTION");
-                e.printStackTrace();
-            }
-            try {
-                Log.i("STREAM", response.body().string());
-            } catch (IOException e) {
-                Log.i("Stream", "EXCEPTION!!!");
-                e.printStackTrace();
-            }
-        }
-        return "hi";
-    }
-
-    /*///////////////////////////////////////////////
         Process Get/Post request asynchronously
     *////////////////////////////////////////////////
-    private class ProcessJSONAsync extends AsyncTask<Object, Void, Object>{
+    private class ProcessJSONAsync extends AsyncTask<Object, Void, Object> {
         protected Object doInBackground(Object... params){
             final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
             Response response = null;
@@ -234,13 +197,21 @@ public class MainActivity extends Activity {
                 client.newCall(request).enqueue(new Callback() {
                     @Override
                     public void onResponse(Call call, final Response response) throws IOException {
-                            Response resp = response;
-                            //finalResp = resp.body().string();
+                        Response resp = response;
+                        String responseData = resp.body().string();
+                        try {
+                            JSONObject json = new JSONObject(responseData);
+                            Log.d("STREAM", json.toString());
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        //finalResp = resp.body().string();
                     }
 
                     @Override
                     public void onFailure(Call call, IOException e) {
                         e.printStackTrace();
+                        Log.d(TAG, "THERE WAS AN ERROR ON THE CALL! " + e);
                     }
                 });
             }
@@ -262,7 +233,7 @@ public class MainActivity extends Activity {
                             String responseData = resp.body().string();
                             Log.d("STREAM", "YO" + resp.header("Content-Type"));
                             JSONObject json = new JSONObject(responseData);
-                            Log.d("STREAM", response.body().string());
+                            Log.d("STREAM", json.toString());
                         } catch (JSONException e) {
                             Log.d("STREAM", "EXCEPTION");
                         }
@@ -315,12 +286,14 @@ public class MainActivity extends Activity {
         if(app.isShowFeedbackOnResume() == true){
             displayFeedbackPopup();
         }
+        Log.d(TAG, "RESUMED!!!!!");
     }
 
     @Override
     public void onPause() {
         super.onPause();
         ((BeaconReferenceApplication) this.getApplicationContext()).setRangingActivity(null);
+        Log.d(TAG, "PAUSED!!!!!");
     }
 
     public void displayWelcomePopup() {
@@ -341,6 +314,7 @@ public class MainActivity extends Activity {
                     @Override
                     public void onClick(View v) {
                         dialog.dismiss();
+                        app.setShowWelcomeOnResume(false);
                     }
                 });
             }
@@ -364,6 +338,54 @@ public class MainActivity extends Activity {
                 dialogButtonOK.setOnClickListener(new OnClickListener() {
                     @Override
                     public void onClick (View v){
+                        dialog.dismiss();
+                    }
+                });
+            }
+        });
+    }
+
+    public void displayLoginPopup() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialog = new Dialog(context);
+                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                dialog.setCancelable(false);
+                dialog.setCanceledOnTouchOutside(false);
+                dialog.setContentView(R.layout.login_popup);
+                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+                dialog.show();
+
+                final Button dialogButtonOK = (Button) dialog.findViewById(R.id.buttonSubmit);
+                dialogButtonOK.setEnabled(false);
+
+                EditText et = (EditText) dialog.findViewById(R.id.colleagueID);
+
+                et.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void afterTextChanged(Editable arg0) {
+                    }
+
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        if(count == 0) {
+                            dialogButtonOK.setEnabled(false);
+                        }
+                        if(count > 0) {
+                            dialogButtonOK.setEnabled(true);
+                        }
+                    }
+                });
+
+                dialogButtonOK.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        app.bindBeacon();
                         dialog.dismiss();
                     }
                 });
