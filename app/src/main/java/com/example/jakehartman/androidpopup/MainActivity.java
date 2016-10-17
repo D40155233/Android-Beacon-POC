@@ -1,8 +1,6 @@
 package com.example.jakehartman.androidpopup;
 
-import android.app.Application;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.AsyncTask;
 
 import android.Manifest;
@@ -15,7 +13,6 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -27,22 +24,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.altbeacon.beacon.AltBeacon;
-import org.altbeacon.beacon.Identifier;
-import org.altbeacon.beacon.Beacon;
-import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
-import org.altbeacon.beacon.BeaconParser;
-import org.altbeacon.beacon.RangeNotifier;
-import org.altbeacon.beacon.Region;
-import org.altbeacon.beacon.MonitorNotifier;
-import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.json.JSONObject;
-import org.json.JSONArray;
 import org.json.JSONException;
 import java.lang.Object;
 import android.app.TaskStackBuilder;
-import android.os.*;
 import android.support.v4.app.NotificationCompat;
 import android.app.PendingIntent;
 import android.app.NotificationManager;
@@ -52,10 +38,6 @@ import android.widget.Toast;
 import okhttp3.*;
 import java.io.IOException;
 import okhttp3.MediaType;
-import org.json.JSONTokener;
-
-
-import java.util.Collection;
 
 public class MainActivity extends Activity {
 
@@ -86,7 +68,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        displayLoginPopup();
+        //displayLoginPopup();
 
         JSONObject authHeaders = new JSONObject();
         try {
@@ -284,7 +266,7 @@ public class MainActivity extends Activity {
         super.onResume();
         ((BeaconReferenceApplication) this.getApplicationContext()).setRangingActivity(this);
         if(app.isShowFeedbackOnResume() == true){
-            displayFeedbackPopup();
+            displayFeedbackPopup("Stuff");
         }
         Log.d(TAG, "RESUMED!!!!!");
     }
@@ -293,6 +275,11 @@ public class MainActivity extends Activity {
     public void onPause() {
         super.onPause();
         ((BeaconReferenceApplication) this.getApplicationContext()).setRangingActivity(null);
+        SharedPreferences.Editor editor = getSharedPreferences("sharedPreferencesData", MODE_PRIVATE).edit();
+        editor.putBoolean("LoginFlag", false);
+        editor.putString("name", "Elena");
+        editor.putInt("idName", 12);
+        editor.commit();
         Log.d(TAG, "PAUSED!!!!!");
     }
 
@@ -321,10 +308,12 @@ public class MainActivity extends Activity {
         });
     }
 
-    public void displayFeedbackPopup() {
+    public void displayFeedbackPopup(String questionText) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                TextView questionText = (TextView) findViewById(R.id.questionText);
+                questionText.setText((CharSequence) questionText);
                 dialog = new Dialog(context);
                 dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                 dialog.setCancelable(false);
@@ -345,53 +334,53 @@ public class MainActivity extends Activity {
         });
     }
 
-    public void displayLoginPopup() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialog = new Dialog(context);
-                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.setCancelable(false);
-                dialog.setCanceledOnTouchOutside(false);
-                dialog.setContentView(R.layout.login_popup);
-                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-                dialog.show();
-
-                final Button dialogButtonOK = (Button) dialog.findViewById(R.id.buttonSubmit);
-                dialogButtonOK.setEnabled(false);
-
-                EditText et = (EditText) dialog.findViewById(R.id.colleagueID);
-
-                et.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void afterTextChanged(Editable arg0) {
-                    }
-
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        if(count == 0) {
-                            dialogButtonOK.setEnabled(false);
-                        }
-                        if(count > 0) {
-                            dialogButtonOK.setEnabled(true);
-                        }
-                    }
-                });
-
-                dialogButtonOK.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        app.bindBeacon();
-                        dialog.dismiss();
-                    }
-                });
-            }
-        });
-    }
+//    public void displayLoginPopup() {
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                dialog = new Dialog(context);
+//                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+//                dialog.setCancelable(false);
+//                dialog.setCanceledOnTouchOutside(false);
+//                dialog.setContentView(R.layout.activity_login);
+//                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+//                dialog.show();
+//
+//                final Button dialogButtonOK = (Button) dialog.findViewById(R.id.buttonSubmit);
+//                dialogButtonOK.setEnabled(false);
+//
+//                EditText et = (EditText) dialog.findViewById(R.id.colleagueID);
+//
+//                et.addTextChangedListener(new TextWatcher() {
+//                    @Override
+//                    public void afterTextChanged(Editable arg0) {
+//                    }
+//
+//                    @Override
+//                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+//                    }
+//
+//                    @Override
+//                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                        if(count == 0) {
+//                            dialogButtonOK.setEnabled(false);
+//                        }
+//                        if(count > 0) {
+//                            dialogButtonOK.setEnabled(true);
+//                        }
+//                    }
+//                });
+//
+//                dialogButtonOK.setOnClickListener(new OnClickListener() {
+//                    @Override
+//                    public void onClick(View v) {
+//                        app.bindBeacon("BLAH");
+//                        dialog.dismiss();
+//                    }
+//                });
+//            }
+//        });
+//    }
 
 
 }

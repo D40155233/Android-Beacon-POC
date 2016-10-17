@@ -14,6 +14,7 @@ import android.os.RemoteException;
 import android.provider.Settings.Secure;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -25,11 +26,13 @@ import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.powersave.BackgroundPowerSaver;
 import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -45,6 +48,9 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     private BackgroundPowerSaver backgroundPowerSaver;
     public static Context context;
     private MainActivity rangingActivity = null;
+    private String userID = null;
+    private JSONArray beaconArray;
+    private List<Beacon> beaconList;
     private boolean showFeedbackOnResume = false;
     private boolean showWelcomeOnResume = false;
     private boolean attendeeDataSent = false;
@@ -63,7 +69,13 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         beaconManager = BeaconManager.getInstanceForApplication(this);
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
-
+        //retrieveBeaconList();
+        //Define all of the beacons using a loop based upon service call above
+        Beacon beaconBuild = new Beacon.Builder()
+                .setId1("E2C56DB5-DFFB-48D2-B060-D0F5A71096E0")
+                .setId2("0")
+                .setId3("0")
+                .build();
         Region region = new Region("backgroundRegion", Identifier.parse("E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"), Identifier.parse("0"), Identifier.parse("0"));
         regionBootstrap = new RegionBootstrap(this, region);
 
@@ -76,25 +88,36 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
 
     @Override
     public void didEnterRegion(Region region) {
+//        try {
+//            beaconManager.startRangingBeaconsInRegion(region);
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override
     public void didExitRegion(Region region) {
+//        try {
+//            beaconManager.stopRangingBeaconsInRegion(region);
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
+
         //This will display the feedback popup if welcomePopup has been shown and they move outside the region of any beacons
         //Delete if logic changes
-        if(welcomePopupShown && rangingActivity != null) {
-            rangingActivity.displayFeedbackPopup();
-        }
-        else if(welcomePopupShown && rangingActivity == null) {
-            showFeedbackOnResume = true;
-            try {
-                beaconManager.stopMonitoringBeaconsInRegion(region);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-            Log.d(TAG, "Sending notification.");
-            sendNotification("Please provide feedback for DeVry Education Group's IT Update Meeting!");
-        }
+//        if(welcomePopupShown && rangingActivity != null) {
+//            rangingActivity.displayFeedbackPopup("Test");
+//        }
+//        else if(welcomePopupShown && rangingActivity == null) {
+//            showFeedbackOnResume = true;
+//            try {
+//                beaconManager.stopMonitoringBeaconsInRegion(region);
+//            } catch (RemoteException e) {
+//                e.printStackTrace();
+//            }
+//            Log.d(TAG, "Sending notification.");
+//            sendNotification("Please provide feedback for DeVry Education Group's IT Update Meeting!");
+//        }
     }
 
     @Override
@@ -293,6 +316,38 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         }
     }
 
+    private void retrieveBeaconList() {
+        JSONObject authHeaders = new JSONObject();
+        try {
+            authHeaders.put("authorization", "PYJIKS17nR1rjB+RroyU/KzgUmoz9x84r9YehdpLhJw=");
+            authHeaders.put("dsi", "D40234627");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url("http://httpstat.us/200")
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            //If Service Call Bad:
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+            }
+            //If Service Call Good:
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try {
+                    beaconArray = new JSONArray(response.body().string());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
     private void sendAttendeeData(String UUID) {
         JSONObject authHeaders = new JSONObject();
         String timeStamp = new java.util.Date().toString();
@@ -309,6 +364,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
             attendeeBody.put("beaconID", UUID);
             attendeeBody.put("os", "Android");
             attendeeBody.put("timestamp", timeStamp);
+            attendeeBody.put("ID", userID);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -317,7 +373,9 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         new ProcessJSONAsync().execute("http://mblpocapp1.poc.devry.edu:9000/attendees", "GET", authHeaders, null);
     }
 
-    public void bindBeacon() {
+    public void bindBeacon(String ID) {
+        userID = ID;
+        Toast.makeText(BeaconReferenceApplication.this, "ID: " + userID, Toast.LENGTH_LONG).show();
         beaconManager.bind(this);
     }
 }

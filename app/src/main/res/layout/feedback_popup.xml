@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="Thanks for attending the All Hands IT Meeting"
-        android:id="@+id/textView3"
+        android:id="@+id/questionText"
         android:layout_gravity="center_horizontal"
         android:textStyle="bold"
         android:textAlignment="center" />
