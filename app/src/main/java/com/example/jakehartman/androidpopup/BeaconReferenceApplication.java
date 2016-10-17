@@ -7,8 +7,6 @@ import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.RemoteException;
 import android.provider.Settings.Secure;
@@ -84,6 +82,8 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         beaconManager.setBackgroundBetweenScanPeriod(1100l);
         //beaconManager.setForegroundBetweenScanPeriod(2000l);
         //beaconManager.bind(this);
+
+        startService(new Intent(this, MyFirebaseMessagingService.class));
     }
 
     @Override
