@@ -267,9 +267,20 @@ public class MainActivity extends Activity {
     @Override
     public void onResume() {
         super.onResume();
-        ((BeaconReferenceApplication) this.getApplicationContext()).setRangingActivity(this);
-        if(app.isShowFeedbackOnResume() == true){
-            displayFeedbackPopup("Stuff");
+        ((BeaconReferenceApplication) this.getApplicationContext()).setMainActivity(this);
+        Bundle extras = getIntent().getExtras();
+        Log.d(TAG, "Checking for extras...");
+        if (extras != null) {
+            Log.d(TAG, "EXTRAS!!!");
+            String extraType = extras.getString("extraType");
+            Log.d(TAG, "Extra type: " + extraType);
+            if(extraType.equals("feedback")) {
+                displayFeedbackPopup(extras.getString("questionText"), extras.getString("questionNumber"));
+            }
+            // and get whatever type user account id is
+        }
+        else {
+            Log.d(TAG, "NOOOO EXTRAS!!!");
         }
         Log.d(TAG, "RESUMED!!!!!");
     }
@@ -277,7 +288,7 @@ public class MainActivity extends Activity {
     @Override
     public void onPause() {
         super.onPause();
-        ((BeaconReferenceApplication) this.getApplicationContext()).setRangingActivity(null);
+        ((BeaconReferenceApplication) this.getApplicationContext()).setMainActivity(null);
         SharedPreferences.Editor editor = getSharedPreferences("sharedPreferencesData", MODE_PRIVATE).edit();
         editor.putBoolean("LoginFlag", false);
         editor.putString("name", "Elena");
@@ -311,12 +322,11 @@ public class MainActivity extends Activity {
         });
     }
 
-    public void displayFeedbackPopup(String questionText) {
+    public void displayFeedbackPopup(final String question, final String questionNumber) {
+        Log.d(TAG, "Trying to display popup...");
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                TextView questionText = (TextView) findViewById(R.id.questionText);
-                questionText.setText((CharSequence) questionText);
                 dialog = new Dialog(context);
                 dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                 dialog.setCancelable(false);
@@ -325,65 +335,22 @@ public class MainActivity extends Activity {
                 dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
                 dialog.show();
 
+                String fullQuestionString = "Question " + questionNumber + ": " + question;
+
+                TextView questionText = (TextView) dialog.findViewById(R.id.questionText);
+                questionText.setText((CharSequence) fullQuestionString);
+
                 Button dialogButtonOK = (Button) dialog.findViewById(R.id.dialogButtonOK);
 
                 dialogButtonOK.setOnClickListener(new OnClickListener() {
                     @Override
-                    public void onClick (View v){
+                    public void onClick(View v) {
                         dialog.dismiss();
                     }
                 });
             }
         });
     }
-
-//    public void displayLoginPopup() {
-//        runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                dialog = new Dialog(context);
-//                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-//                dialog.setCancelable(false);
-//                dialog.setCanceledOnTouchOutside(false);
-//                dialog.setContentView(R.layout.activity_login);
-//                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-//                dialog.show();
-//
-//                final Button dialogButtonOK = (Button) dialog.findViewById(R.id.buttonSubmit);
-//                dialogButtonOK.setEnabled(false);
-//
-//                EditText et = (EditText) dialog.findViewById(R.id.colleagueID);
-//
-//                et.addTextChangedListener(new TextWatcher() {
-//                    @Override
-//                    public void afterTextChanged(Editable arg0) {
-//                    }
-//
-//                    @Override
-//                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-//                    }
-//
-//                    @Override
-//                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-//                        if(count == 0) {
-//                            dialogButtonOK.setEnabled(false);
-//                        }
-//                        if(count > 0) {
-//                            dialogButtonOK.setEnabled(true);
-//                        }
-//                    }
-//                });
-//
-//                dialogButtonOK.setOnClickListener(new OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        app.bindBeacon("BLAH");
-//                        dialog.dismiss();
-//                    }
-//                });
-//            }
-//        });
-//    }
 
 
 }

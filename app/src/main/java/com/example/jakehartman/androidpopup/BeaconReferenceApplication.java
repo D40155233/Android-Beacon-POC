@@ -4,15 +4,22 @@ import android.app.Application;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.provider.Settings.Secure;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -30,7 +37,9 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -45,7 +54,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     private RegionBootstrap regionBootstrap;
     private BackgroundPowerSaver backgroundPowerSaver;
     public static Context context;
-    private MainActivity rangingActivity = null;
+    private MainActivity mainActivity = null;
     private String userID = null;
     private JSONArray beaconArray;
     private List<Beacon> beaconList;
@@ -56,6 +65,8 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     private static final String PREFS_NAME = "DVGBeacon";
     private boolean haveDetectedBeaconsSinceBoot = false;
     private boolean welcomePopupShown = false;
+    private Intent firebaseServiceIntent;
+    private MyFirebaseMessagingService mfbs;
 
     BeaconManager beaconManager;
 
@@ -65,6 +76,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         context = getApplicationContext();
         android_id = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        firebaseServiceIntent = new Intent(this, MyFirebaseMessagingService.class);
         beaconManager = BeaconManager.getInstanceForApplication(this);
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
         //retrieveBeaconList();
@@ -83,7 +95,8 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         //beaconManager.setForegroundBetweenScanPeriod(2000l);
         //beaconManager.bind(this);
 
-        startService(new Intent(this, MyFirebaseMessagingService.class));
+        startService(firebaseServiceIntent);
+        FirebaseMessaging.getInstance().subscribeToTopic("feedback");
     }
 
     @Override
@@ -119,6 +132,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
 //            sendNotification("Please provide feedback for DeVry Education Group's IT Update Meeting!");
 //        }
     }
+
 
     @Override
     public void didDetermineStateForRegion(int state, Region region) {
@@ -163,18 +177,18 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
                 this.startActivity(intent);
                 haveDetectedBeaconsSinceBoot = true;
             } else {
-                if (rangingActivity != null && beacon.getDistance()<5) {
+                if (mainActivity != null && beacon.getDistance()<5) {
                     // If the Monitoring Activity is visible, we log info about the beacons we have
                     // seen on its display
                     if(welcomePopupShown == false) {
                         Log.d(TAG, "Showing popup!");
                         if(showWelcomeOnResume != true) {
-                            rangingActivity.displayWelcomePopup();
+                            mainActivity.displayWelcomePopup();
                         }
                         showWelcomeOnResume = true;
                         welcomePopupShown = true;
                     }
-                } else if (rangingActivity == null && beacon.getDistance()<5){
+                } else if (mainActivity == null && beacon.getDistance()<5){
                     // If we have already seen beacons before, but the monitoring activity is not in
                     // the foreground, we send a notification to the user on subsequent detections.
                     if(welcomePopupShown == false) {
@@ -196,8 +210,8 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         beaconManager.addRangeNotifier(this);
     }
 
-    public void setRangingActivity(MainActivity activity) {
-        this.rangingActivity = activity;
+    public void setMainActivity(MainActivity activity) {
+        this.mainActivity = activity;
     }
 
     private void sendNotification(String text) {
@@ -377,5 +391,39 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         userID = ID;
         Toast.makeText(BeaconReferenceApplication.this, "ID: " + userID, Toast.LENGTH_LONG).show();
         beaconManager.bind(this);
+    }
+
+    public void feedbackInfoReceived(Map<String, String> map) {
+        Log.d(TAG, "HASHMAP! " + map);
+        Log.d(TAG, "QUESTION TEXT!" + map.get("questionText"));
+        //Main Activity is up, display pop-up
+        if (mainActivity != null) {
+            mainActivity.displayFeedbackPopup(map.get("questionText"), map.get("questionNumber"));
+        }
+        //Main Activity is not up, send notification
+        else {
+            NotificationCompat.Builder builder =
+                    new NotificationCompat.Builder(this)
+                            .setContentTitle("DeVry Education Group")
+                            .setContentText("DeVry would like you to provide feedback!")
+                            .setSmallIcon(R.drawable.ic_dvg)
+                            .setColor(getResources().getColor(R.color.devryGold))
+                            .setAutoCancel(true);
+
+            Intent resultIntent = new Intent(this, MainActivity.class);
+            resultIntent.putExtra("extraType", "feedback");
+            resultIntent.putExtra("questionText", map.get("questionText"));
+            resultIntent.putExtra("questionNumber", map.get("questionNumber"));
+            TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+            stackBuilder.addNextIntent(resultIntent);
+
+            PendingIntent resultPendingIntent =
+                    PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            builder.setContentIntent(resultPendingIntent);
+            NotificationManager notificationManager =
+                    (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.notify(1, builder.build());
+
+        }
     }
 }

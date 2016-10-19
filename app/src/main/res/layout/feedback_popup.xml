@@ -21,21 +21,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Thanks for attending the All Hands IT Meeting"
         android:id="@+id/questionText"
         android:layout_gravity="center_horizontal"
         android:textStyle="bold"
         android:textAlignment="center" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Please provide feedback"
-        android:id="@+id/textView"
-        android:layout_gravity="center_horizontal"
-        android:textStyle="bold"
-        android:layout_marginBottom="30dp" />
 
     <RatingBar
         android:layout_width="wrap_content"
@@ -46,12 +35,15 @@
         android:theme="@style/RatingBar"/>
 
     <EditText
-        android:layout_width="350dp"
+        android:layout_width="336dp"
         android:layout_height="wrap_content"
         android:inputType="textMultiLine"
         android:ems="10"
-        android:id="@+id/editText"
-        android:layout_gravity="center_horizontal" />
+        android:id="@+id/editText2"
+        android:background="@drawable/textbox"
+        android:textCursorDrawable="@null"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight="0.19" />
 
     <Button
         android:layout_width="150dp"
