@@ -1,4 +1,4 @@
-package com.example.jakehartman.androidpopup;
+package com.devry.jakehartman.beaconpoc;
 
 import org.junit.Test;
 

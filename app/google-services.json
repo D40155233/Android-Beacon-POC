@@ -36,6 +36,37 @@
           "status": 2
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:223614645229:android:91333ab0b0e478ad",
+        "android_client_info": {
+          "package_name": "com.devry.jakehartman.beaconpoc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "223614645229-491k9kuph7dbjeo4r4skjt42t575rhdt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB96BDCIPgMrBLrdJ2pF-c-YfKuyG-KoD4"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
     }
   ],
   "configuration_version": "1"

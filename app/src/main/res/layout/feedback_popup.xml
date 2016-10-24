@@ -29,17 +29,19 @@
     <RatingBar
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/ratingBar"
+        android:id="@+id/feedbackRating"
         android:layout_gravity="center_horizontal"
         android:stepSize="1.0"
-        android:theme="@style/RatingBar"/>
+        android:theme="@style/RatingBar"
+        android:numStars="5"
+        android:rating="3" />
 
     <EditText
         android:layout_width="336dp"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:inputType="textMultiLine"
         android:ems="10"
-        android:id="@+id/editText2"
+        android:id="@+id/feedbackComment"
         android:background="@drawable/textbox"
         android:textCursorDrawable="@null"
         android:layout_gravity="center_horizontal"

@@ -1,4 +1,4 @@
-package com.example.jakehartman.androidpopup;
+package com.devry.jakehartman.beaconpoc;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

@@ -1,16 +1,9 @@
-package com.example.jakehartman.androidpopup;
+package com.devry.jakehartman.beaconpoc;
 
-import android.content.Intent;
-import android.os.Handler;
-import android.os.Binder;
-import android.os.IBinder;
 import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by ernesto on 10/17/16.
@@ -27,9 +20,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         //check for data payload
         if (remoteMessage.getData().size() > 0) {
-            Log.d("firebase", "message data payload : " + remoteMessage.getData());
             app = (BeaconReferenceApplication)getApplication();
-            app.feedbackInfoReceived(remoteMessage.getData());
+            if(remoteMessage.getFrom().equals("/topics/feedback")) {
+                app.feedbackInfoReceived(remoteMessage.getData());
+            }
+            else if(remoteMessage.getFrom().equals("/topics/reminders")) {
+                Log.d("firebase", "sending payload to app");
+                app.reminderInfoReceived(remoteMessage.getData());
+            }
         }
 
         // check for notification payload

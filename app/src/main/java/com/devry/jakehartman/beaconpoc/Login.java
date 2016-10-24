@@ -1,6 +1,7 @@
-package com.example.jakehartman.androidpopup;
+package com.devry.jakehartman.beaconpoc;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -27,6 +28,10 @@ public class Login extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         final String TAG = "LoginActivity";
+//        if (!isTaskRoot()) {
+//            finish();
+//            return;
+//        }
         setContentView(R.layout.activity_login);
         app = (BeaconReferenceApplication)getApplication();
         colleagueIDEntry = (EditText) findViewById(R.id.colleagueID);
@@ -54,9 +59,16 @@ public class Login extends AppCompatActivity {
                     public void onResponse(Call call, Response response) throws IOException {
                         runOnUiThread(new Runnable() {
                             public void run() {
+                                Log.d(TAG, "ID Before: " + ID);
+//                                SharedPreferences.Editor editor = getSharedPreferences("sharedPreferencesData", MODE_PRIVATE).edit();
+//                                editor.putString("userID", ID);
+//                                editor.putBoolean("loginFlag", false);
+//                                editor.commit();
+                                Log.d(TAG, "ID After: " + ID);
                                 app.bindBeacon(ID);
                                 Intent intent = new Intent(Login.this, MainActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                intent.putExtra("extraType", "login");
+                                intent.putExtra("userID", ID);
                                 startActivity(intent);
                             }
                         });
