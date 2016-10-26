@@ -1,22 +1,17 @@
-package com.devry.jakehartman.beaconpoc;
+package com.dvg.jakehartman.beaconpoc;
 
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -30,18 +25,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.altbeacon.beacon.BeaconManager;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class MainActivity extends Activity {
 
@@ -52,8 +35,6 @@ public class MainActivity extends Activity {
     private Context context = this;
     private BeaconReferenceApplication app;
     private BeaconManager beaconManager;
-    private Dialog welcomeDialog;
-    private Dialog feedbackDialog;
     private Dialog dialog;
     private SharedPreferences sharedPreferences;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
@@ -61,24 +42,29 @@ public class MainActivity extends Activity {
     private Boolean loginFlag = false;
     private Boolean meetingStartedFlag = false;
     private Boolean beaconFoundFlag = false;
+    private boolean welcomePopupShown = false;
     private String UUID = "None";
     private String userID = "Unknown";
     @TargetApi(23)
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "Oncreate Called");
         sharedPreferences = context.getSharedPreferences("sharedPreferencesData", Context.MODE_PRIVATE);
         Log.d(TAG, "Getting Preferences...");
         loginFlag = sharedPreferences.getBoolean("loginFlag", false);
+        Log.d(TAG, "loginflag:" + loginFlag);
         meetingStartedFlag = sharedPreferences.getBoolean("meetingStartedFlag", false);
+        Log.d(TAG, "meetingStartedFlag:" + meetingStartedFlag);
         beaconFoundFlag = sharedPreferences.getBoolean("beaconFoundFlag", false);
+        welcomePopupShown = sharedPreferences.getBoolean("welcomePopupShown", false);
         UUID = sharedPreferences.getString("UUID", "None");
         userID = sharedPreferences.getString("userID", "Unknown");
         setContentView(R.layout.activity_main);
         app = (BeaconReferenceApplication)getApplication();
-        welcomeDialog = new Dialog(context);
-        feedbackDialog = new Dialog(context);
         dialog = new Dialog(context);
         Button debugButton = (Button) findViewById(R.id.debugButton);
+        final LinearLayout debugLayout = (LinearLayout) findViewById(R.id.debugLayout);
+        final Button removeFlags = (Button) debugLayout.findViewById(R.id.clearFlagsButton);
         Bundle extras = getIntent().getExtras();
         if(extras != null) {
             userID = extras.getString("userID");
@@ -93,14 +79,38 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean onLongClick(View v) {
-                LinearLayout debugLayout = (LinearLayout) findViewById(R.id.debugLayout);
-                if (debugLayout.getVisibility() == debugLayout.INVISIBLE)
+                if (debugLayout.getVisibility() == debugLayout.INVISIBLE) {
                     debugLayout.setVisibility(debugLayout.VISIBLE);
-                else if (debugLayout.getVisibility() == debugLayout.VISIBLE)
+                    removeFlags.setEnabled(true);
+                } else if (debugLayout.getVisibility() == debugLayout.VISIBLE) {
                     debugLayout.setVisibility(debugLayout.INVISIBLE);
-                //debugLayout.setVisibility(LinearLayout.VISIBLE);
+                    removeFlags.setEnabled(false);
+                }
                 return true;
-                //Toast.makeText(MainActivity.this, "Values Reset", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        removeFlags.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "Resetting all values");
+                app.stopAllServiceConnections();
+                app.clearNotifications();
+                app.setUserWithinRange(false);
+                app.setWelcomePopupShown(false);
+                loginFlag = false;
+                meetingStartedFlag = false;
+                beaconFoundFlag = false;
+                UUID = "None";
+                userID = "Unknown";
+                welcomePopupShown = false;
+                //new
+                app.initializeBeaconManager();
+                SharedPreferences.Editor editor = getSharedPreferences("sharedPreferencesData", MODE_PRIVATE).edit();
+                editor.clear();
+                editor.commit();
+                Intent intent = new Intent(MainActivity.this, Login.class);
+                startActivity(intent);
             }
         });
 
@@ -149,6 +159,10 @@ public class MainActivity extends Activity {
                 displayFeedbackPopup(extras.getString("questionText"), extras.getString("questionNumber"));
             }
             else if(extraType.equals("welcome")) {
+                if(extras.getString("UUID") != null) {
+                    UUID = extras.getString("UUID");
+                    updateDebugValues();
+                }
                 displayWelcomePopup();
             }
         }
@@ -208,6 +222,7 @@ public class MainActivity extends Activity {
         editor.putBoolean("loginFlag", loginFlag);
         editor.putBoolean("meetingStartedFlag", meetingStartedFlag);
         editor.putBoolean("beaconFoundFlag", beaconFoundFlag);
+        editor.putBoolean("welcomePopupShown", welcomePopupShown);
         editor.putString("UUID", UUID);
         editor.putString("userID", userID);
         editor.commit();
@@ -215,29 +230,33 @@ public class MainActivity extends Activity {
     }
 
     public void displayWelcomePopup() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialog.dismiss();
-                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                dialog.setCancelable(false);
-                dialog.setCanceledOnTouchOutside(false);
-                dialog.setContentView(R.layout.welcome_popup);
-                dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
-                dialog.show();
+        if(welcomePopupShown != true) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialog.dismiss();
+                    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                    dialog.setCancelable(false);
+                    dialog.setCanceledOnTouchOutside(false);
+                    dialog.setContentView(R.layout.welcome_popup);
+                    dialog.getWindow().getAttributes().width = WindowManager.LayoutParams.MATCH_PARENT;
+                    dialog.show();
 
-                Button dialogButtonOK = (Button) dialog.findViewById(R.id.dialogButtonOK);
+                    Button dialogButtonOK = (Button) dialog.findViewById(R.id.dialogButtonOK);
 
-                dialogButtonOK.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        dialog.dismiss();
-                        app.sendAttendeeData();
-                        app.setShowWelcomeOnResume(false);
-                    }
-                });
-            }
-        });
+                    dialogButtonOK.setOnClickListener(new OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            dialog.dismiss();
+                            app.sendAttendeeData();
+                            //app.setShowWelcomeOnResume(false);
+                        }
+                    });
+                }
+            });
+            welcomePopupShown = true;
+            app.setWelcomePopupShown(welcomePopupShown);
+        }
     }
 
     public void displayFeedbackPopup(final String question, final String questionNumber) {

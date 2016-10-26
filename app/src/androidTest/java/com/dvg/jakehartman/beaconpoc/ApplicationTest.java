@@ -1,4 +1,4 @@
-package com.devry.jakehartman.beaconpoc;
+package com.dvg.jakehartman.beaconpoc;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

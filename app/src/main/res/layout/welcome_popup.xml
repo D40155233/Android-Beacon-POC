@@ -22,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Welcome User to the All Hands IT Meeting for October 2016"
+        android:text="Welcome User to the All Hands IT Meeting for November 2016"
         android:id="@+id/textView3"
         android:layout_gravity="center_horizontal"
         android:textStyle="bold"

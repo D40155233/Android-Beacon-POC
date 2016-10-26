@@ -1,4 +1,4 @@
-package com.devry.jakehartman.beaconpoc;
+package com.dvg.jakehartman.beaconpoc;
 
 import org.junit.Test;
 
