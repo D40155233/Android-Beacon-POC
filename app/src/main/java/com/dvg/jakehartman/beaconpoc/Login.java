@@ -64,7 +64,7 @@ public class Login extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //Do service call here to validate D#
-                ID = colleagueIDEntry.getText().toString();
+                ID = colleagueIDEntry.getText().toString().toUpperCase();
                 OkHttpClient client = new OkHttpClient();
                 Request request = new Request.Builder()
                         .url("http://ec2-52-44-53-47.compute-1.amazonaws.com:8080/DVG-CustomerEngagement-Services/api/customerengagement/user/" + ID)
