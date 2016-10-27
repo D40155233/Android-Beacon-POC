@@ -21,10 +21,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         //check for data payload
         if (remoteMessage.getData().size() > 0) {
             app = (BeaconReferenceApplication)getApplication();
+            if(remoteMessage.getFrom().equals("/topics/debugFeedback")) {
+                app.feedbackInfoReceived(remoteMessage.getData());
+            }
             if(remoteMessage.getFrom().equals("/topics/feedback")) {
                 app.feedbackInfoReceived(remoteMessage.getData());
             }
-            else if(remoteMessage.getFrom().equals("/topics/reminders")) {
+            if(remoteMessage.getFrom().equals("/topics/debugReminders")) {
+                Log.d("firebase", "sending payload to app");
+                app.reminderInfoReceived(remoteMessage.getData());
+            }
+            if(remoteMessage.getFrom().equals("/topics/reminders")) {
                 Log.d("firebase", "sending payload to app");
                 app.reminderInfoReceived(remoteMessage.getData());
             }
