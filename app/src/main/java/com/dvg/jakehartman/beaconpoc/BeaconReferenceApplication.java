@@ -12,7 +12,6 @@ import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.vdurmont.emoji.EmojiParser;
@@ -261,7 +260,6 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 Response r = response;
-                FirebaseMessaging.getInstance().subscribeToTopic("feedback");
                 Log.d(TAG, "RESPONSE CODE! " + r.code());
                 Log.d(TAG, "RESPONSE! " + r.body().string());
             }
@@ -317,6 +315,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         Log.d(TAG, "bindBeacon has been hit!");
         userID = ID;
         FirebaseMessaging.getInstance().subscribeToTopic("reminders");
+        FirebaseMessaging.getInstance().subscribeToTopic("feedback");
     }
 
     public void setWelcomePopupShown(boolean tempbool) {
