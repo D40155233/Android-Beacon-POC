@@ -314,8 +314,15 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     public void bindBeacon(String ID) {
         Log.d(TAG, "bindBeacon has been hit!");
         userID = ID;
-        FirebaseMessaging.getInstance().subscribeToTopic("reminders");
-        FirebaseMessaging.getInstance().subscribeToTopic("feedback");
+        if (BuildConfig.DEBUG) {
+            FirebaseMessaging.getInstance().subscribeToTopic("debugReminders");
+            FirebaseMessaging.getInstance().subscribeToTopic("debugFeedback");
+        }
+        else {
+            FirebaseMessaging.getInstance().subscribeToTopic("reminders");
+            FirebaseMessaging.getInstance().subscribeToTopic("feedback");
+        }
+
     }
 
     public void setWelcomePopupShown(boolean tempbool) {
@@ -350,7 +357,13 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         if(mainActivity != null) {
             mainActivity.setMeetingStartedFlag();
         }
-        FirebaseMessaging.getInstance().unsubscribeFromTopic("reminders");
+
+        if (BuildConfig.DEBUG) {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("debugReminders");
+        }
+        else {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("reminders");
+        }
 //            else {
 //                mainActivity.displayErrorToast("Unable to retrieve beacons");
 //            }
@@ -448,8 +461,14 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     }
 
     public void stopAllServiceConnections() {
-        FirebaseMessaging.getInstance().unsubscribeFromTopic("reminders");
-        FirebaseMessaging.getInstance().unsubscribeFromTopic("feedback");
+        if (BuildConfig.DEBUG) {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("debugReminders");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("debugFeedback");
+        }
+        else {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("reminders");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("feedback");
+        }
 //        if(regionBootstrap != null) {
 //            regionBootstrap.disable();
 //        }
