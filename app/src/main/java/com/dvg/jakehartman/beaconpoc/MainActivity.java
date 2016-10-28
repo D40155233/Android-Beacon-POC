@@ -24,6 +24,8 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.testfairy.TestFairy;
+
 import org.altbeacon.beacon.BeaconManager;
 
 public class MainActivity extends Activity {
@@ -49,6 +51,7 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "Oncreate Called");
+        TestFairy.begin(this, "d8de0e7aefb707e52f5e661b8c1d4980e5305d48");
         sharedPreferences = context.getSharedPreferences("sharedPreferencesData", Context.MODE_PRIVATE);
         Log.d(TAG, "Getting Preferences...");
         loginFlag = sharedPreferences.getBoolean("loginFlag", false);

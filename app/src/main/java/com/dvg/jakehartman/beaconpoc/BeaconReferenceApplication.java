@@ -320,9 +320,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         }
         else {
             FirebaseMessaging.getInstance().subscribeToTopic("reminders");
-            FirebaseMessaging.getInstance().subscribeToTopic("feedback");
         }
-
     }
 
     public void setWelcomePopupShown(boolean tempbool) {

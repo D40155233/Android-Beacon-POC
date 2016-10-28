@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.vdurmont.emoji.EmojiParser;
 
 import org.json.JSONException;
@@ -64,6 +65,7 @@ public class Login extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //Do service call here to validate D#
+                FirebaseMessaging.getInstance().subscribeToTopic("feedback");
                 ID = colleagueIDEntry.getText().toString().toUpperCase();
                 OkHttpClient client = new OkHttpClient();
                 Request request = new Request.Builder()
