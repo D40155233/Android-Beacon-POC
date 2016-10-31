@@ -21,7 +21,7 @@ android {
         applicationId "com.devry.jakehartman.beaconpoc"
         minSdkVersion 18
         targetSdkVersion 23
-        versionCode 6
+        versionCode 7
         versionName "1.1"
         signingConfig signingConfigs.devry
     }
