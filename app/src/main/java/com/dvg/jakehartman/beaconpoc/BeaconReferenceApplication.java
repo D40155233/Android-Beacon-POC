@@ -31,11 +31,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -223,6 +226,12 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     public void sendAttendeeData() {
         OkHttpClient client = new OkHttpClient();
         String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+
+//        SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+//        timeStamp = isoFormat.format(new java.util.Date());
+
+        Log.d(TAG, "Timestamp!!!" + timeStamp);
         final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
         JSONObject attendeeBody = new JSONObject();
@@ -269,6 +278,19 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     public void sendFeedbackData(String ID, int rating, String comment) {
         OkHttpClient client = new OkHttpClient();
         String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+
+//        SimpleDateFormat dateFormatGmt = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
+//        dateFormatGmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+//
+//        //Local time zone
+//        SimpleDateFormat dateFormatLocal = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
+//
+//        //Time in GMT
+//        try {
+//            timeStamp = dateFormatLocal.parse( dateFormatGmt.format(new Date()) ).toString();
+//        } catch (ParseException e) {
+//            e.printStackTrace();
+//        }
         final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         String parsedComment = EmojiParser.removeAllEmojis(comment);
         JSONObject feedbackBody = new JSONObject();
@@ -320,6 +342,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         }
         else {
             FirebaseMessaging.getInstance().subscribeToTopic("reminders");
+            FirebaseMessaging.getInstance().subscribeToTopic("feedback");
         }
     }
 

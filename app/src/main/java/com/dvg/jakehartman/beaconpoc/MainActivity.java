@@ -316,12 +316,19 @@ public class MainActivity extends Activity {
                 TextView beaconFoundValue = (TextView) findViewById(R.id.beaconFoundValue);
                 TextView beaconNameValue = (TextView) findViewById(R.id.beaconNameValue);
                 TextView userIDValue = (TextView) findViewById(R.id.userIDValue);
+                TextView meetingStartIndicator = (TextView) findViewById(R.id.meetingStartedIndicator);
 
                 loginFlagValue.setText((CharSequence) (loginFlag.toString()));
                 meetingStartedValue.setText((CharSequence) meetingStartedFlag.toString());
                 beaconFoundValue.setText((CharSequence) beaconFoundFlag.toString());
                 beaconNameValue.setText((CharSequence) UUID);
                 userIDValue.setText((CharSequence) userID);
+                if(meetingStartedFlag == true) {
+                    meetingStartIndicator.setText("Meeting has started");
+                }
+                else if(meetingStartedFlag == false ) {
+                    meetingStartIndicator.setText("Meeting has not yet started");
+                }
             }
         });
     }
