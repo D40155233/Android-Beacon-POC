@@ -316,6 +316,9 @@ public class MainActivity extends Activity {
                         RatingBar feedbackRating = (RatingBar) dialog.findViewById(R.id.feedbackRating);
                         EditText feedbackComment = (EditText) dialog.findViewById(R.id.feedbackComment);
                         int fbr = (int)feedbackRating.getRating();
+                        if(fbr < 1) {
+                            fbr = 1;
+                        }
                         String fbc = feedbackComment.getText().toString();
                         app.sendFeedbackData(questionNumber, fbr, fbc);
                         dialog.dismiss();
