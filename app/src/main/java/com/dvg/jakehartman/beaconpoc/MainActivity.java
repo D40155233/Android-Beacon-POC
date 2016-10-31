@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
         app = (BeaconReferenceApplication)getApplication();
         dialog = new Dialog(context);
         Button debugButton = (Button) findViewById(R.id.debugButton);
+        Button resetButton = (Button) findViewById(R.id.resetButton);
         final LinearLayout debugLayout = (LinearLayout) findViewById(R.id.debugLayout);
         final Button removeFlags = (Button) debugLayout.findViewById(R.id.clearFlagsButton);
         Bundle extras = getIntent().getExtras();
@@ -101,6 +102,32 @@ public class MainActivity extends Activity {
                 app.clearNotifications();
                 app.setUserWithinRange(false);
                 app.setWelcomePopupShown(false);
+                app.retrieveBeaconList();
+                loginFlag = false;
+                meetingStartedFlag = false;
+                beaconFoundFlag = false;
+                UUID = "None";
+                userID = "Unknown";
+                welcomePopupShown = false;
+                //new
+                app.initializeBeaconManager();
+                SharedPreferences.Editor editor = getSharedPreferences("sharedPreferencesData", MODE_PRIVATE).edit();
+                editor.clear();
+                editor.commit();
+                Intent intent = new Intent(MainActivity.this, Login.class);
+                startActivity(intent);
+            }
+        });
+
+        resetButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "Resetting all values");
+                app.stopAllServiceConnections();
+                app.clearNotifications();
+                app.setUserWithinRange(false);
+                app.setWelcomePopupShown(false);
+                app.retrieveBeaconList();
                 loginFlag = false;
                 meetingStartedFlag = false;
                 beaconFoundFlag = false;

@@ -179,7 +179,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
 //        showWelcomeOnResume = bool;
 //    }
 
-    private void retrieveBeaconList() {
+    public void retrieveBeaconList() {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url("http://ec2-52-44-53-47.compute-1.amazonaws.com:8080/DVG-CustomerEngagement-Services/api/customerengagement/beacon_location")
